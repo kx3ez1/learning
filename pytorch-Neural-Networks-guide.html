@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyTorch & Neural Networks: Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Neutrals with PyTorch Flame Red/Orange Accents -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive educational dashboard. It flows logically from foundational concepts (Tensors & GPU) to structural components (Neural Networks & Activations) and culminates in a dynamic process (The Training Loop). A newly added "Advanced Roadmap" section acts as an interactive knowledge matrix, using a master-detail pattern and a visual Polar Area chart to organize deep-dive topics, allowing users to explore complex curricula without being overwhelmed by text walls. -->
+    <!-- Visualization & Content Choices: 
+        1. CPU vs GPU Performance -> Bar Chart -> Hover -> Shows hardware scaling efficiency -> Chart.js. 
+        2. Activation Functions -> Line Chart -> Dropdown selection -> Illustrates non-linear transformations -> Chart.js. 
+        3. Training Loop -> Line Chart (Animated) -> Button trigger -> Simulates loss reduction over epochs -> Chart.js. 
+        4. Process Flow -> HTML/CSS Blocks -> Step-by-step highlight -> Explains the forward/backward pass cleanly.
+        5. Advanced Learning Roadmap -> Polar Area Chart & Master-Detail UI -> Click chart/list to filter -> Organizes 9 complex domains of knowledge interactively -> Chart.js + Vanilla JS UI state. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .roadmap-chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (max-width: 768px) {
+            .chart-container { height: 250px; }
+            .roadmap-chart-container { height: 280px; }
+        }
+        .code-block {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        html { scroll-behavior: smooth; }
+        .nav-link.active { border-bottom: 2px solid #ea580c; color: #ea580c; }
+        
+        .pulse-highlight { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border {
+            0% { border-color: #ea580c; box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.4); }
+            70% { border-color: #fb923c; box-shadow: 0 0 0 10px rgba(234, 88, 12, 0); }
+            100% { border-color: #ea580c; box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+        }
+
+        .roadmap-item { cursor: pointer; transition: all 0.2s; }
+        .roadmap-item:hover { background-color: #fff7ed; border-color: #fed7aa; }
+        .roadmap-item.active { background-color: #ea580c; color: white; border-color: #ea580c; }
+        .roadmap-item.active .text-stone-500 { color: #ffedd5; }
+        
+        /* Custom scrollbar for horizontal mobile lists */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Custom scrollbar for detail panel */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d6d3d1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased font-sans">
+
+    <nav class="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-50 border-b border-stone-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-orange-600 tracking-tight">🔥 PyTorch<span class="text-stone-800">Guide</span></span>
+                </div>
+                <div class="hidden md:flex items-center space-x-6 lg:space-x-8">
+                    <a href="#intro" class="nav-link text-sm lg:text-base text-stone-600 hover:text-orange-600 font-medium transition-colors">Intro</a>
+                    <a href="#tensors" class="nav-link text-sm lg:text-base text-stone-600 hover:text-orange-600 font-medium transition-colors">Tensors</a>
+                    <a href="#networks" class="nav-link text-sm lg:text-base text-stone-600 hover:text-orange-600 font-medium transition-colors">Networks</a>
+                    <a href="#training" class="nav-link text-sm lg:text-base text-stone-600 hover:text-orange-600 font-medium transition-colors">Training</a>
+                    <a href="#roadmap" class="nav-link text-sm lg:text-base text-stone-600 hover:text-orange-600 font-medium transition-colors">Advanced Roadmap</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header id="intro" class="max-w-4xl mx-auto px-4 py-20 text-center scroll-mt-24">
+        <h1 class="text-5xl md:text-6xl font-extrabold text-stone-900 tracking-tight mb-6">
+            Deep Learning with <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-500">PyTorch</span>
+        </h1>
+        <p class="mt-4 text-xl text-stone-600 leading-relaxed">
+            An interactive exploration of PyTorch. Discover how tensors, dynamic computation graphs, and neural network modules come together to power modern AI, and chart your path to advanced mastery.
+        </p>
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+            <a href="#tensors" class="bg-orange-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-orange-700 transition-colors shadow-lg shadow-orange-600/30">Start Basics 🚀</a>
+            <a href="#roadmap" class="bg-white text-stone-800 border border-stone-300 px-8 py-3 rounded-full font-semibold hover:bg-stone-100 transition-colors shadow-sm">Jump to Advanced Roadmap</a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-24">
+
+        <!-- Section 1: Tensors -->
+        <section id="tensors" class="scroll-mt-24">
+            <div class="mb-10 text-center md:text-left max-w-4xl">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">1. Tensors & Hardware Acceleration</h2>
+                <p class="text-lg text-stone-600">
+                    At its core, PyTorch is a library for processing multidimensional arrays called <strong>Tensors</strong>. Similar to NumPy arrays, Tensors can encode inputs, outputs, and parameters of models. Crucially, Tensors can run on GPUs to massively accelerate computing.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span>💻</span> Code: Tensor Basics</h3>
+                    <p class="text-sm text-stone-500 mb-4">Creating a tensor and moving it to an accelerated device (GPU/MPS).</p>
+                    <div class="bg-stone-900 text-stone-200 p-4 rounded-xl code-block text-sm overflow-x-auto">
+<pre><code>import torch
+
+<span class="text-stone-400"># Create a random 3x3 tensor</span>
+x = torch.rand(3, 3)
+
+<span class="text-stone-400"># Check for GPU availability</span>
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+<span class="text-stone-400"># Move tensor to the device</span>
+x = x.to(device)
+print(f"Tensor is on: {x.device}")</code></pre>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                    <h3 class="text-xl font-bold mb-2 flex items-center gap-2"><span>⚡</span> CPU vs GPU Performance</h3>
+                    <p class="text-sm text-stone-500 mb-6">Simulated execution time for matrix multiplication (lower is better). Shows the massive advantage of GPU acceleration for large tensors.</p>
+                    <div class="chart-container">
+                        <canvas id="computeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Networks -->
+        <section id="networks" class="scroll-mt-24">
+            <div class="mb-10 text-center md:text-left max-w-4xl">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">2. Building Neural Networks</h2>
+                <p class="text-lg text-stone-600">
+                    PyTorch provides the <code>torch.nn</code> namespace, containing all building blocks to create complex neural networks. A neural network is a module consisting of other modules (layers).
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+                        <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><span>🧠</span> Defining a Model</h3>
+                        <p class="text-sm text-stone-500 mb-4">Subclassing <code>nn.Module</code> to build a simple feed-forward network. Layers are defined in <code>__init__</code> and data flow in <code>forward</code>.</p>
+                        <div class="bg-stone-900 text-stone-200 p-4 rounded-xl code-block text-sm overflow-x-auto">
+<pre><code>import torch.nn as nn
+
+class SimpleNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.stack = nn.Sequential(
+            nn.Linear(28*28, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10)
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        return self.stack(x)</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col h-full">
+                    <div class="flex justify-between items-center mb-4 gap-4 flex-wrap">
+                        <h3 class="text-xl font-bold flex items-center gap-2"><span>📈</span> Activation Functions</h3>
+                        <select id="activationSelect" class="bg-stone-100 border border-stone-300 text-stone-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block p-2 outline-none">
+                            <option value="relu">ReLU (Rectified Linear)</option>
+                            <option value="sigmoid">Sigmoid</option>
+                            <option value="tanh">Tanh (Hyperbolic Tangent)</option>
+                        </select>
+                    </div>
+                    <p class="text-sm text-stone-500 mb-6 min-h-[40px]" id="activationDesc">
+                        ReLU outputs the input directly if positive, else zero. It is the default choice for hidden layers due to fast computation and preventing vanishing gradients.
+                    </p>
+                    <div class="chart-container flex-grow">
+                        <canvas id="activationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Training Loop -->
+        <section id="training" class="scroll-mt-24">
+            <div class="mb-10 text-center md:text-left max-w-4xl">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">3. The Training Loop</h2>
+                <p class="text-lg text-stone-600">
+                    Training is an iterative process. In each iteration (epoch), the model makes a guess, calculates the error (Loss), and adjusts its parameters to reduce that error using Autograd and an Optimizer.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-4 space-y-3">
+                    <div class="bg-white p-4 lg:p-5 rounded-xl border-2 border-transparent transition-all" id="step-forward">
+                        <h4 class="font-bold text-stone-900 mb-1">1. Forward Pass</h4>
+                        <p class="text-sm text-stone-600">Pass input data through the model to generate predictions.</p>
+                        <code class="text-xs bg-stone-100 px-2 py-1 rounded mt-2 block w-fit text-orange-700 font-mono">pred = model(X)</code>
+                    </div>
+                    <div class="flex justify-center text-stone-400">⬇️</div>
+                    <div class="bg-white p-4 lg:p-5 rounded-xl border-2 border-transparent transition-all" id="step-loss">
+                        <h4 class="font-bold text-stone-900 mb-1">2. Compute Loss</h4>
+                        <p class="text-sm text-stone-600">Compare predictions to actual targets to calculate the error.</p>
+                        <code class="text-xs bg-stone-100 px-2 py-1 rounded mt-2 block w-fit text-orange-700 font-mono">loss = loss_fn(pred, y)</code>
+                    </div>
+                    <div class="flex justify-center text-stone-400">⬇️</div>
+                    <div class="bg-white p-4 lg:p-5 rounded-xl border-2 border-transparent transition-all" id="step-backward">
+                        <h4 class="font-bold text-stone-900 mb-1">3. Backward Pass</h4>
+                        <p class="text-sm text-stone-600">Compute gradients of the loss with respect to parameters.</p>
+                        <code class="text-xs bg-stone-100 px-2 py-1 rounded mt-2 block w-fit text-orange-700 font-mono">loss.backward()</code>
+                    </div>
+                    <div class="flex justify-center text-stone-400">⬇️</div>
+                    <div class="bg-white p-4 lg:p-5 rounded-xl border-2 border-transparent transition-all" id="step-step">
+                        <h4 class="font-bold text-stone-900 mb-1">4. Optimizer Step</h4>
+                        <p class="text-sm text-stone-600">Update model weights based on calculated gradients.</p>
+                        <code class="text-xs bg-stone-100 px-2 py-1 rounded mt-2 block w-fit text-orange-700 font-mono">optimizer.step()</code>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h3 class="text-xl font-bold flex items-center gap-2"><span>🎯</span> Live Training Simulation</h3>
+                            <p class="text-sm text-stone-500">Watch the model loss decrease over epochs.</p>
+                        </div>
+                        <button id="trainBtn" class="bg-stone-900 text-white px-6 py-2 rounded-lg font-semibold hover:bg-stone-800 transition-colors w-full sm:w-auto focus:ring-4 focus:ring-stone-200 outline-none">
+                            Start Training
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-stone-50 p-4 rounded-xl text-center border border-stone-100">
+                            <span class="block text-sm text-stone-500 font-medium">Current Epoch</span>
+                            <span class="block text-2xl font-bold text-stone-900" id="epochCounter">0 / 30</span>
+                        </div>
+                        <div class="bg-stone-50 p-4 rounded-xl text-center border border-stone-100">
+                            <span class="block text-sm text-stone-500 font-medium">Current Loss</span>
+                            <span class="block text-2xl font-bold text-orange-600" id="lossDisplay">--</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-container flex-grow mt-4">
+                        <canvas id="trainingChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 4: Advanced Roadmap -->
+        <section id="roadmap" class="scroll-mt-24 pt-8 border-t border-stone-200">
+            <div class="mb-10 text-center md:text-left max-w-4xl">
+                <span class="text-sm font-bold tracking-wider text-orange-600 uppercase mb-2 block">Beyond the Basics</span>
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">4. Advanced PyTorch Learning Roadmap</h2>
+                <p class="text-lg text-stone-600">
+                    To become proficient in building advanced neural networks, explore these essential domains. This interactive matrix covers optimization techniques, complex architectures, scaling, and production deployment. 
+                </p>
+                <p class="text-sm text-stone-500 mt-2 italic">Select a domain from the visual map or the list below to explore study topics and practical guides.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Navigation / Visualization Panel -->
+                <div class="lg:col-span-4 space-y-6">
+                    <!-- Visual Map -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 hidden md:block">
+                        <h4 class="text-center text-sm font-semibold text-stone-500 mb-2 uppercase tracking-wide">Knowledge Domains</h4>
+                        <div class="roadmap-chart-container">
+                            <canvas id="roadmapPolarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Category List -->
+                    <div class="flex overflow-x-auto hide-scrollbar lg:flex-col gap-3 pb-4 lg:pb-0" id="roadmapCategories">
+                        <!-- JS injected categories -->
+                    </div>
+                </div>
+
+                <!-- Detail Panel -->
+                <div class="lg:col-span-8 bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-stone-200 min-h-[500px] max-h-[650px] overflow-y-auto custom-scrollbar" id="roadmapDetailPanel">
+                    <!-- JS injected details -->
+                    <div class="h-full flex flex-col justify-center items-center text-stone-400">
+                        <span class="text-4xl mb-4">🧭</span>
+                        <p>Select a topic from the left to explore.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 text-stone-400 py-10 text-center border-t border-stone-800">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <span class="text-xl font-bold text-orange-600">🔥 PyTorch<span class="text-stone-300">Guide</span></span>
+            </div>
+            <p class="mb-2">An interactive educational document synthesizing foundational and advanced PyTorch concepts.</p>
+            <p class="text-sm text-stone-500">Built with HTML, Tailwind CSS, and Chart.js.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Global Chart config
+            Chart.defaults.font.family = "'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+            Chart.defaults.color = '#57534e';
+
+            // --- 1. Compute Chart ---
+            const ctxCompute = document.getElementById('computeChart').getContext('2d');
+            new Chart(ctxCompute, {
+                type: 'bar',
+                data: {
+                    labels: ['1K x 1K', '5K x 5K', '10K x 10K'],
+                    datasets: [
+                        {
+                            label: 'CPU Time (ms)',
+                            data: [15, 320, 2400],
+                            backgroundColor: '#a8a29e', 
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'GPU Time (ms)',
+                            data: [5, 12, 45],
+                            backgroundColor: '#ea580c', 
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Time (ms)' },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // --- 2. Activation Chart ---
+            const generateXValues = (min, max, step) => {
+                const arr = [];
+                for(let i = min; i <= max; i += step) arr.push(parseFloat(i.toFixed(1)));
+                return arr;
+            };
+            const xVals = generateXValues(-5, 5, 0.2);
+            
+            const actData = {
+                relu: xVals.map(x => Math.max(0, x)),
+                sigmoid: xVals.map(x => 1 / (1 + Math.exp(-x))),
+                tanh: xVals.map(x => Math.tanh(x))
+            };
+
+            const actDescriptions = {
+                relu: "ReLU outputs the input directly if positive, else zero. It is the default choice for hidden layers due to fast computation and preventing vanishing gradients.",
+                sigmoid: "Sigmoid maps values between 0 and 1. Historically popular, but prone to vanishing gradients. Often used in output layers for binary classification.",
+                tanh: "Tanh maps values between -1 and 1. Zero-centered, making it generally preferable to Sigmoid in hidden layers, though it still suffers from vanishing gradients."
+            };
+
+            const ctxAct = document.getElementById('activationChart').getContext('2d');
+            let activationChart = new Chart(ctxAct, {
+                type: 'line',
+                data: {
+                    labels: xVals,
+                    datasets: [{
+                        label: 'f(x) = max(0, x)',
+                        data: actData.relu,
+                        borderColor: '#ea580c',
+                        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Input (x)' },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        y: { 
+                            title: { display: true, text: 'Output f(x)' },
+                            grid: { color: '#f5f5f4' },
+                            suggestedMin: -2,
+                            suggestedMax: 5
+                        }
+                    }
+                }
+            });
+
+            const actSelect = document.getElementById('activationSelect');
+            const actDesc = document.getElementById('activationDesc');
+
+            actSelect.addEventListener('change', (e) => {
+                const type = e.target.value;
+                activationChart.data.datasets[0].data = actData[type];
+                
+                if(type === 'relu') {
+                    activationChart.data.datasets[0].label = 'f(x) = max(0, x)';
+                    activationChart.options.scales.y.suggestedMin = -2;
+                    activationChart.options.scales.y.suggestedMax = 5;
+                } else if (type === 'sigmoid') {
+                    activationChart.data.datasets[0].label = 'f(x) = 1 / (1 + e^-x)';
+                    activationChart.options.scales.y.suggestedMin = -0.5;
+                    activationChart.options.scales.y.suggestedMax = 1.5;
+                } else {
+                    activationChart.data.datasets[0].label = 'f(x) = tanh(x)';
+                    activationChart.options.scales.y.suggestedMin = -1.5;
+                    activationChart.options.scales.y.suggestedMax = 1.5;
+                }
+                
+                actDesc.textContent = actDescriptions[type];
+                activationChart.update();
+            });
+
+            // --- 3. Training Loop Simulation ---
+            const ctxTrain = document.getElementById('trainingChart').getContext('2d');
+            let trainingChart = new Chart(ctxTrain, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Training Loss',
+                        data: [],
+                        borderColor: '#292524',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#ea580c',
+                        pointRadius: 3,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 200 },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Epochs' },
+                            grid: { display: false },
+                            suggestedMax: 30
+                        },
+                        y: { 
+                            title: { display: true, text: 'Loss Value' },
+                            grid: { color: '#f5f5f4' },
+                            suggestedMin: 0,
+                            suggestedMax: 2.5
+                        }
+                    }
+                }
+            });
+
+            const trainBtn = document.getElementById('trainBtn');
+            const epochCounter = document.getElementById('epochCounter');
+            const lossDisplay = document.getElementById('lossDisplay');
+            
+            const steps = ['step-forward', 'step-loss', 'step-backward', 'step-step'];
+            let trainingInterval;
+            let currentEpoch = 0;
+            let currentLoss = 2.4;
+            let stepIndex = 0;
+
+            const resetTraining = () => {
+                currentEpoch = 0;
+                currentLoss = 2.4;
+                trainingChart.data.labels = [];
+                trainingChart.data.datasets[0].data = [];
+                trainingChart.update();
+                epochCounter.innerText = "0 / 30";
+                lossDisplay.innerText = "--";
+                steps.forEach(id => document.getElementById(id).classList.remove('pulse-highlight', 'border-orange-500', 'bg-orange-50'));
+            };
+
+            const highlightStep = (index) => {
+                steps.forEach((id, i) => {
+                    const el = document.getElementById(id);
+                    if (i === index) {
+                        el.classList.add('border-orange-500', 'bg-orange-50');
+                    } else {
+                        el.classList.remove('border-orange-500', 'bg-orange-50');
+                    }
+                });
+            };
+
+            trainBtn.addEventListener('click', () => {
+                if(trainBtn.innerText === "Training...") return;
+                
+                resetTraining();
+                trainBtn.innerText = "Training...";
+                trainBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+                trainingInterval = setInterval(() => {
+                    highlightStep(stepIndex % 4);
+                    
+                    if (stepIndex % 4 === 3) {
+                        currentEpoch++;
+                        const noise = (Math.random() - 0.5) * 0.1;
+                        currentLoss = currentLoss * 0.85 + noise;
+                        if (currentLoss < 0.05) currentLoss = 0.05 + Math.abs(noise);
+
+                        trainingChart.data.labels.push(currentEpoch);
+                        trainingChart.data.datasets[0].data.push(currentLoss);
+                        trainingChart.update();
+
+                        epochCounter.innerText = `${currentEpoch} / 30`;
+                        lossDisplay.innerText = currentLoss.toFixed(4);
+                    }
+                    
+                    stepIndex++;
+
+                    if (currentEpoch >= 30) {
+                        clearInterval(trainingInterval);
+                        trainBtn.innerText = "Start Training";
+                        trainBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        steps.forEach(id => document.getElementById(id).classList.remove('border-orange-500', 'bg-orange-50'));
+                    }
+                }, 150); 
+            });
+
+            // --- 4. Advanced Roadmap Data & UI ---
+            const roadmapData = [
+                {
+                    id: 'arch', icon: '🏛️', color: '#ea580c', title: '1. Advanced Architectures',
+                    intro: 'Go beyond simple feed-forward networks by mastering architectures designed for specific data modalities like images, sequences, and generative tasks.',
+                    topics: [
+                        { 
+                            name: 'CNNs (Convolutional Neural Networks)', 
+                            desc: 'Learn how CNNs are used for image processing, computer vision tasks, and feature extraction. Explore architectures like ResNet and EfficientNet.', 
+                            guide: 'Implementing CNNs with PyTorch.',
+                            outcomes: 'Image classification, object detection, facial recognition, and semantic segmentation.',
+                            examples: 'ResNet-50 (ImageNet winner), YOLO (Real-time object detection), Tesla Autopilot vision systems.',
+                            code: `import torch.nn as nn\n\n# A basic CNN Block\ncnn_block = nn.Sequential(\n    nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1),\n    nn.ReLU(),\n    nn.MaxPool2d(kernel_size=2, stride=2)\n)`
+                        },
+                        { 
+                            name: 'RNNs, LSTMs, and GRUs', 
+                            desc: 'Understand the workings of recurrent networks suited for sequence data. Dive deep into handling long-range dependencies.', 
+                            guide: 'Building an LSTM model for time-series forecasting.',
+                            outcomes: 'Time-series forecasting, speech recognition, sentiment analysis, and sequence-to-sequence translation.',
+                            examples: 'Google Voice transcription, Algorithmic stock market predictors, Apple Siri voice processing.',
+                            code: `import torch.nn as nn\n\n# LSTM Layer configuration\nlstm = nn.LSTM(input_size=10, hidden_size=20, num_layers=2, batch_first=True)`
+                        },
+                        { 
+                            name: 'Transformer Networks', 
+                            desc: 'Transformers have revolutionized NLP and vision. Learn the architecture of transformers and self-attention mechanisms.', 
+                            guide: 'Implementing a Transformer-based model (e.g., BERT/GPT).',
+                            outcomes: 'High-quality text generation, complex language translation, protein folding prediction, and vision-transformers (ViT).',
+                            examples: 'OpenAI ChatGPT (GPT-4), Google Gemini, GitHub Copilot, AlphaFold 2.'
+                        },
+                        { 
+                            name: 'GANs (Generative Adversarial Networks)', 
+                            desc: 'Understand how GANs work, their components (generator, discriminator), and applications in image generation.', 
+                            guide: 'Building and training a GAN in PyTorch.',
+                            outcomes: 'Photorealistic image synthesis, deepfakes, image super-resolution, and text-to-image groundwork.',
+                            examples: 'StyleGAN (thispersondoesnotexist.com), NVIDIA DLSS (upscaling rendering).'
+                        }
+                    ]
+                },
+                {
+                    id: 'opt', icon: '⚙️', color: '#d97706', title: '2. Optimization Techniques',
+                    intro: 'Improve model convergence, prevent overfitting, and ensure stable training dynamics with advanced optimization strategies.',
+                    topics: [
+                        { 
+                            name: 'Learning Rate Schedules & Warm-up', 
+                            desc: 'Explore schedules like cosine annealing, exponential decay, and cyclical learning rates to improve convergence.', 
+                            guide: 'Implementing advanced LR schedules in PyTorch.',
+                            outcomes: 'Faster training convergence, avoiding getting stuck in local minima, and stable initial training phases.',
+                            examples: 'OneCycleLR used extensively in the fast.ai library for rapid training.',
+                            code: `import torch.optim as optim\n\noptimizer = optim.AdamW(model.parameters(), lr=0.01)\n# Decay LR by a factor of 0.1 every 10 epochs\nscheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)`
+                        },
+                        { 
+                            name: 'Advanced Optimizers', 
+                            desc: 'Understand optimizers like AdamW, RAdam, and LAMB, and their advantages over standard Adam or SGD.', 
+                            guide: 'Implementing optimizers with custom schedules.',
+                            outcomes: 'Better generalization across validation data, weight decoupling to prevent parameter bloat.',
+                            examples: 'AdamW is the default standard for training massive transformer models like BERT and GPT-3.'
+                        },
+                        { 
+                            name: 'Gradient Clipping', 
+                            desc: 'Prevent exploding gradients, particularly in deep RNNs, ensuring training stability.', 
+                            guide: 'Using gradient clipping during training.', 
+                            outcomes: 'Prevents NaN (Not a Number) errors during training, stabilizing recurrent networks.',
+                            examples: 'Essential practice in training deep LSTMs and early seq2seq translation models.',
+                            code: `import torch.nn as nn\n\n# Clip gradients before optimizer step\nnn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\noptimizer.step()` 
+                        },
+                        { 
+                            name: 'Weight Regularization & Dropout', 
+                            desc: 'Apply L1/L2 regularization, dropout layers, and batch normalization to improve generalization.', 
+                            guide: 'Adding regularization to prevent overfitting.',
+                            outcomes: 'Models that perform well on unseen real-world data, not just memorizing the training set.',
+                            examples: 'Dropout (Srivastava et al., 2014) is standard in almost all fully connected classifier heads.'
+                        }
+                    ]
+                },
+                {
+                    id: 'data', icon: '🗂️', color: '#ca8a04', title: '3. Data Handling & Augmentation',
+                    intro: 'Models are only as good as their data. Master PyTorch tools to load, augment, and balance datasets efficiently.',
+                    topics: [
+                        { 
+                            name: 'Data Augmentation', 
+                            desc: 'Techniques like random cropping, flipping, rotation for images, or back-translation for text to artificially expand datasets.', 
+                            guide: 'Using torchvision.transforms for image data.',
+                            outcomes: 'Increased dataset diversity, teaching models rotational/translational invariance.',
+                            examples: 'RandAugment used in EfficientNet, Albumentations library for aggressive pipeline creation.',
+                            code: `from torchvision import transforms\n\n# Robust image augmentation pipeline\naug_transforms = transforms.Compose([\n    transforms.RandomResizedCrop(224),\n    transforms.RandomHorizontalFlip(),\n    transforms.ColorJitter(brightness=0.2, contrast=0.2),\n    transforms.ToTensor()\n])`
+                        },
+                        { 
+                            name: 'Handling Imbalanced Datasets', 
+                            desc: 'Techniques like oversampling, undersampling, and class-weighting to handle class imbalances.', 
+                            guide: 'Using torch.utils.data.WeightedRandomSampler.',
+                            outcomes: 'Unbiased models that correctly predict minority classes instead of defaulting to the majority.',
+                            examples: 'Fraud detection algorithms where fraudulent transactions are <0.1% of the data.'
+                        },
+                        { 
+                            name: 'Custom Datasets & Dataloaders', 
+                            desc: 'Create custom datasets by subclassing Dataset and handling complex data processing pipelines.', 
+                            guide: 'Building a custom dataset class.',
+                            outcomes: 'Ability to ingest any data format (Audio, Video, 3D Scans, Multi-modal JSONs) into PyTorch.',
+                            examples: 'Loading massive medical MRI scans (.dcm files) dynamically to prevent RAM overflow.'
+                        }
+                    ]
+                },
+                {
+                    id: 'train', icon: '🏋️', color: '#65a30d', title: '4. Advanced Training',
+                    intro: 'Leverage existing knowledge and scale up your training methodologies to build more robust and versatile models.',
+                    topics: [
+                        { 
+                            name: 'Transfer Learning', 
+                            desc: 'Fine-tune pre-trained models for your specific task, saving computation and improving accuracy on small datasets.', 
+                            guide: 'Fine-tuning pre-trained models (e.g., ResNet, BERT).',
+                            outcomes: 'Production-ready models achieved in hours instead of weeks, with minimal training data.',
+                            examples: 'Fine-tuning HuggingFace BERT for legal document classification; adapting ResNet for custom manufacturing defect detection.',
+                            code: `import torchvision.models as models\nimport torch.nn as nn\n\n# Load pre-trained ResNet and freeze weights\nmodel = models.resnet18(weights='DEFAULT')\nfor param in model.parameters():\n    param.requires_grad = False\n\n# Replace the final fully connected layer for custom classes\nmodel.fc = nn.Linear(model.fc.in_features, num_classes=10)`
+                        },
+                        { 
+                            name: 'Multi-task Learning', 
+                            desc: 'Train models for multiple tasks simultaneously, sharing representations and improving generalization.', 
+                            guide: 'Implementing multi-task learning.',
+                            outcomes: 'A single, efficient model that handles multiple goals, leveraging overlapping domain features.',
+                            examples: 'Self-driving car models that simultaneously predict steering angle, detect pedestrians, and read speed limits.'
+                        },
+                        { 
+                            name: 'Meta-Learning & Few-shot', 
+                            desc: 'Learn the concept of "learning how to learn" and its applications in scenarios with very limited data.', 
+                            guide: 'Implementing meta-learning algorithms.',
+                            outcomes: 'Models that can learn a completely new task given only 1 to 5 examples (few-shot).',
+                            examples: 'Model-Agnostic Meta-Learning (MAML) used in robotic manipulation adaptation.'
+                        },
+                        { 
+                            name: 'Ensemble Methods', 
+                            desc: 'Techniques like bagging, boosting, and stacking to combine multiple models for superior performance.', 
+                            guide: 'Building an ensemble of models.',
+                            outcomes: 'State-of-the-art accuracy, smoothing out individual model errors.',
+                            examples: 'Standard strategy for winning Kaggle machine learning competitions.'
+                        }
+                    ]
+                },
+                {
+                    id: 'eval', icon: '📊', color: '#0d9488', title: '5. Evaluation & Debugging',
+                    intro: 'Ensure your models are performing correctly and understand why they make certain predictions.',
+                    topics: [
+                        { 
+                            name: 'Cross-Validation & Hyperparameters', 
+                            desc: 'Perform k-fold CV and grid/random search for robust hyperparameter tuning.', 
+                            guide: 'Tuning using libraries like Optuna or Ray Tune.',
+                            outcomes: 'Finding the mathematically optimal learning rate, layer size, and dropout rate automatically.',
+                            examples: 'Using Optuna to search parameter spaces during overnight training runs.'
+                        },
+                        { 
+                            name: 'Advanced Metrics (TorchMetrics)', 
+                            desc: 'Evaluate beyond accuracy using precision, recall, F1-score, AUC, and domain-specific metrics.', 
+                            guide: 'Using torchmetrics for calculation.',
+                            outcomes: 'Accurately measuring success in highly imbalanced scenarios (where 99% accuracy might actually mean failure).',
+                            examples: 'Using AUC-ROC for medical diagnostic models to balance false positives vs false negatives.',
+                            code: `from torchmetrics.classification import MulticlassAccuracy\n\n# Initialize metric\nmetric = MulticlassAccuracy(num_classes=10, average='macro')\n\n# Update during batch loops\nmetric.update(preds, targets)\n\n# Compute final score\nfinal_accuracy = metric.compute()`
+                        },
+                        { 
+                            name: 'Model Interpretability', 
+                            desc: 'Techniques like SHAP and LIME to explain model predictions and unbox the "black box".', 
+                            guide: 'Visualizing networks with Captum.',
+                            outcomes: 'Compliance with "Right to Explanation" laws, finding hidden biases in training data.',
+                            examples: 'Using Captum integrated gradients to show exactly which pixels caused a CNN to classify an image as a dog.'
+                        }
+                    ]
+                },
+                {
+                    id: 'dist', icon: '🌐', color: '#0284c7', title: '6. Distributed Computing',
+                    intro: 'Scale your deep learning workloads across multiple GPUs and nodes to train massive models efficiently.',
+                    topics: [
+                        { 
+                            name: 'Distributed Data Parallel (DDP)', 
+                            desc: 'Parallelize the training process optimally across multiple GPUs, synchronizing gradients efficiently.', 
+                            guide: 'Scaling training to multiple GPUs.',
+                            outcomes: 'Linearly scaling training speed; turning a 40-day single-GPU run into a 5-day 8-GPU run.',
+                            examples: 'Standard paradigm for training foundational models (like Meta\'s LLaMA 3) across thousands of NVIDIA A100s.',
+                            code: `from torch.nn.parallel import DistributedDataParallel as DDP\n\n# Move model to assigned GPU device\nmodel = model.to(local_rank)\n\n# Wrap model for distributed training\nddp_model = DDP(model, device_ids=[local_rank])`
+                        },
+                        { 
+                            name: 'TensorBoard & Monitoring', 
+                            desc: 'Track training metrics, visualize loss curves, and inspect model graphs in real-time.', 
+                            guide: 'Integrating TensorBoard with PyTorch.',
+                            outcomes: 'Real-time observability, spotting diverging gradients early to stop doomed training runs.',
+                            examples: 'Weights & Biases (Wandb) or TensorBoard integrations used by every major AI lab.'
+                        }
+                    ]
+                },
+                {
+                    id: 'adv', icon: '🔬', color: '#4f46e5', title: '7. Advanced Topics',
+                    intro: 'Explore the cutting edge of machine learning research implemented in PyTorch.',
+                    topics: [
+                        { 
+                            name: 'Self-Supervised Learning', 
+                            desc: 'Learn representations from unlabelled data, crucial for modern NLP and vision tasks (SimCLR, masked language modeling).', 
+                            guide: 'Implementing self-supervised algorithms.',
+                            outcomes: 'Massive pre-training on the internet without needing millions of human annotations.',
+                            examples: 'BERT (predicting masked words), SimCLR (contrastive vision learning).'
+                        },
+                        { 
+                            name: 'Reinforcement Learning (RL)', 
+                            desc: 'RL fundamentals: exploration vs. exploitation, reward maximization, and policy optimization.', 
+                            guide: 'Implementing Q-learning or policy gradients.',
+                            outcomes: 'Agents that can beat humans in complex environments or optimize industrial processes.',
+                            examples: 'AlphaGo, OpenAI Five (Dota 2), ChatGPT RLHF (Reinforcement Learning from Human Feedback).'
+                        },
+                        { 
+                            name: 'Neural Architecture Search (NAS)', 
+                            desc: 'Automatically design optimal neural network architectures using AI.', 
+                            guide: 'Using libraries like AutoKeras with PyTorch.',
+                            outcomes: 'Finding highly efficient architectures humans wouldn\'t think of, balancing accuracy and compute.',
+                            examples: 'Google\'s NASNet, which found a highly efficient mobile architecture automatically.'
+                        }
+                    ]
+                },
+                {
+                    id: 'deploy', icon: '🚀', color: '#9333ea', title: '8. Deployment & Production',
+                    intro: 'Transition your trained models from the research lab to real-world production environments.',
+                    topics: [
+                        { 
+                            name: 'Model Optimization (Quantization)', 
+                            desc: 'Techniques like pruning, quantization, and distillation to reduce model size and latency.', 
+                            guide: 'Using torch.quantization for production.',
+                            outcomes: 'Shrinking a 1GB model to 250MB and running it 3x faster without losing noticeable accuracy.',
+                            examples: 'Running local LLMs (like Llama.cpp natively) on consumer hardware via 4-bit/8-bit quantization.'
+                        },
+                        { 
+                            name: 'ONNX Export', 
+                            desc: 'Export models to the Open Neural Network Exchange format for cross-platform, high-performance inference.', 
+                            guide: 'Exporting to ONNX.',
+                            outcomes: 'Framework-agnostic deployment. Train in PyTorch, run in C++, C#, or JavaScript in-browser.',
+                            examples: 'Deploying PyTorch models into Unity Game Engine via ONNX Runtime.',
+                            code: `import torch\n\ndummy_input = torch.randn(1, 3, 224, 224)\n\n# Export the model\ntorch.onnx.export(model, dummy_input, "model.onnx",\n                  export_params=True,\n                  input_names=['input'],\n                  output_names=['output'])`
+                        },
+                        { 
+                            name: 'TorchServe', 
+                            desc: 'Deploy PyTorch models as scalable, performant APIs.', 
+                            guide: 'Setting up and deploying with TorchServe.',
+                            outcomes: 'Production-ready REST endpoints that handle batching, versioning, and multiple model hosting automatically.',
+                            examples: 'AWS SageMaker and major enterprise deployments relying on TorchServe for microservice infrastructure.'
+                        }
+                    ]
+                },
+                {
+                    id: 'comm', icon: '📚', color: '#be123c', title: '9. Community & Resources',
+                    intro: 'Stay updated and continue your learning journey by engaging with the broader AI community.',
+                    topics: [
+                        { name: 'Official Tutorials', desc: 'Dive into the official PyTorch documentation for in-depth, continually updated guides.', guide: 'pytorch.org/tutorials' },
+                        { name: 'Research Papers (arXiv)', desc: 'Read state-of-the-art model papers and implement them to stay at the cutting edge.', guide: 'Implement recent papers from scratch.' },
+                        { name: 'Kaggle Competitions', desc: 'Gain hands-on experience and interact with the data science community on real-world datasets.', guide: 'Participate and review PyTorch kernel solutions.' }
+                    ]
+                }
+            ];
+
+            const categoryContainer = document.getElementById('roadmapCategories');
+            const detailPanel = document.getElementById('roadmapDetailPanel');
+            let activeCategoryId = null;
+
+            // Generate Category List
+            roadmapData.forEach((cat, index) => {
+                const btn = document.createElement('div');
+                btn.className = `roadmap-item flex-shrink-0 lg:flex-shrink-none flex items-center gap-3 p-3 lg:p-4 rounded-xl border border-stone-200 bg-stone-50 text-stone-700 select-none`;
+                btn.dataset.id = cat.id;
+                btn.dataset.index = index;
+                btn.innerHTML = `
+                    <span class="text-xl lg:text-2xl">${cat.icon}</span>
+                    <div class="flex flex-col text-left">
+                        <span class="font-bold text-sm lg:text-base leading-tight">${cat.title}</span>
+                    </div>
+                `;
+                
+                btn.addEventListener('click', () => {
+                    selectCategory(cat.id);
+                    // Update polar chart if clicked from list
+                    const activeIndex = roadmapPolarChart.data.labels.indexOf(cat.title.substring(3)); // hack to match label
+                    if(activeIndex > -1) {
+                        const activeElements = [{datasetIndex: 0, index: activeIndex}];
+                        roadmapPolarChart.setActiveElements(activeElements);
+                        roadmapPolarChart.update();
+                    }
+                });
+                categoryContainer.appendChild(btn);
+            });
+
+            const selectCategory = (id) => {
+                if (activeCategoryId === id) return;
+                activeCategoryId = id;
+
+                // Update styling
+                document.querySelectorAll('.roadmap-item').forEach(el => {
+                    if (el.dataset.id === id) {
+                        el.classList.add('active', 'shadow-md');
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    } else {
+                        el.classList.remove('active', 'shadow-md');
+                    }
+                });
+
+                // Update Detail Panel
+                const data = roadmapData.find(c => c.id === id);
+                if (data) {
+                    let topicsHtml = data.topics.map((t, i) => {
+                        // DRY Implementation: Conditionally render components only if they exist in the data
+                        const outcomesHtml = t.outcomes ? `
+                            <div class="mt-2 text-sm text-stone-600 bg-white p-2.5 rounded border border-stone-100 shadow-sm">
+                                <strong class="text-stone-800 flex items-center gap-1"><span class="text-xs">✨</span> Outcomes:</strong> ${t.outcomes}
+                            </div>
+                        ` : '';
+                        
+                        const examplesHtml = t.examples ? `
+                            <div class="mt-1 text-sm text-stone-600 bg-white p-2.5 rounded border border-stone-100 shadow-sm">
+                                <strong class="text-stone-800 flex items-center gap-1"><span class="text-xs">🏆</span> Popular Examples:</strong> ${t.examples}
+                            </div>
+                        ` : '';
+
+                        const codeBlockHtml = t.code ? `
+                            <div class="mt-3 bg-stone-900 text-stone-200 p-3 rounded-lg code-block text-xs md:text-sm overflow-x-auto shadow-inner border border-stone-800">
+                                <pre><code>${t.code}</code></pre>
+                            </div>
+                        ` : '';
+                        
+                        return `
+                        <div class="mb-8 last:mb-0 relative pl-6 border-l-2" style="border-color: ${data.color}40">
+                            <div class="absolute w-3 h-3 rounded-full -left-[7px] top-1.5" style="background-color: ${data.color}"></div>
+                            <h5 class="font-bold text-stone-900 text-lg mb-1">${t.name}</h5>
+                            <p class="text-sm text-stone-600 mb-2">${t.desc}</p>
+                            <div class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md mb-2" style="background-color: ${data.color}15; color: ${data.color}">
+                                <span>📖 Guide:</span> ${t.guide}
+                            </div>
+                            
+                            <div class="space-y-1">
+                                ${outcomesHtml}
+                                ${examplesHtml}
+                            </div>
+                            
+                            ${codeBlockHtml}
+                        </div>
+                        `;
+                    }).join('');
+
+                    detailPanel.style.opacity = '0';
+                    setTimeout(() => {
+                        detailPanel.innerHTML = `
+                            <div class="flex items-center gap-3 mb-4 pb-4 border-b border-stone-100">
+                                <span class="text-3xl">${data.icon}</span>
+                                <h3 class="text-2xl font-bold text-stone-900">${data.title}</h3>
+                            </div>
+                            <p class="text-stone-600 mb-8 text-lg">${data.intro}</p>
+                            <div class="space-y-2">
+                                ${topicsHtml}
+                            </div>
+                        `;
+                        detailPanel.style.transition = 'opacity 0.3s ease-in-out';
+                        detailPanel.style.opacity = '1';
+                    }, 150);
+                }
+            };
+
+            // Init Polar Area Chart
+            const ctxPolar = document.getElementById('roadmapPolarChart').getContext('2d');
+            const labels = roadmapData.map(d => d.title.substring(3)); // Strip numbers for chart
+            const colors = roadmapData.map(d => d.color);
+            const bgColors = colors.map(c => c + 'CC'); // Add alpha
+
+            const roadmapPolarChart = new Chart(ctxPolar, {
+                type: 'polarArea',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: [10, 10, 10, 10, 10, 10, 10, 10, 10], // Equal weight for visual map
+                        backgroundColor: bgColors,
+                        borderWidth: 1,
+                        borderColor: '#fff',
+                        hoverBackgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return " Click to explore"; },
+                                title: function(context) { return context[0].label; }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            ticks: { display: false },
+                            grid: { color: '#f5f5f4' }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            selectCategory(roadmapData[index].id);
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    }
+                }
+            });
+
+            // Select first category by default on load
+            setTimeout(() => {
+                selectCategory(roadmapData[0].id);
+            }, 500);
+
+            // Scroll Spy for Navigation
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                            if(link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { threshold: 0.3 });
+
+            document.querySelectorAll('section, header').forEach((section) => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
